@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="128" fill="#8B181B"/>
+  <circle cx="256" cy="256" r="210" fill="none" stroke="#D97706" stroke-width="14"/>
+  <circle cx="256" cy="256" r="192" fill="#721316"/>
+  <!-- Lyre / Harp & Laurel Motif for St. Cecilia (Patron Saint of Musicians & Academics) -->
+  <path d="M256 120 L280 180 L345 185 L295 225 L312 290 L256 250 L200 290 L217 225 L167 185 L232 180 Z" fill="#F59E0B"/>
+  <circle cx="256" cy="350" r="32" fill="#D97706"/>
+  <text x="256" y="430" font-family="serif" font-size="44" font-weight="bold" text-anchor="middle" fill="#FAF9F6" letter-spacing="4">ST. CECILIA'S</text>
+  <text x="256" y="468" font-family="sans-serif" font-size="24" font-weight="600" text-anchor="middle" fill="#FCD34D" letter-spacing="6">ALUMNI</text>
+</svg>

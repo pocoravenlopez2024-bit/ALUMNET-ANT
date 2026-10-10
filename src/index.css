@@ -1,0 +1,883 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+
+@custom-variant dark (&:is(.dark, .dark *));
+
+@theme {
+  --font-serif: "Cormorant Garamond", Georgia, serif;
+  --font-sans: "Plus Jakarta Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --color-brand-red: #991B1B;
+  --color-dark-text: #111827;
+  --color-muted-text: #6B7280;
+  --color-border-subtle: #E5E7EB;
+  --color-card-white: #FFFFFF;
+  --color-soft-white: #F9FAFB;
+}
+
+html {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  font-family: var(--font-sans);
+  color: var(--foreground, #111827);
+  background-color: var(--background, #F9FAFB);
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
+  font-family: var(--font-sans);
+  color: var(--foreground, #111827);
+  background-color: var(--background, #F9FAFB);
+  transition: background-color 0.2s ease, color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.font-display {
+  font-family: "Cormorant Garamond", Georgia, serif;
+}
+
+/* Mobile Capacitor & PWA Safe Area Utilities & Root Variables */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+}
+
+.pt-safe {
+  padding-top: max(env(safe-area-inset-top, 0px), 0px);
+}
+.pb-safe {
+  padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
+}
+.pl-safe {
+  padding-left: max(env(safe-area-inset-left, 0px), 0px);
+}
+.pr-safe {
+  padding-right: max(env(safe-area-inset-right, 0px), 0px);
+}
+.mt-safe {
+  margin-top: env(safe-area-inset-top, 0px);
+}
+.mb-safe {
+  margin-bottom: env(safe-area-inset-bottom, 0px);
+}
+.top-safe {
+  top: env(safe-area-inset-top, 0px);
+}
+.bottom-safe {
+  bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Mobile viewport and touch optimizations */
+html, body {
+  min-height: 100%;
+  min-height: 100dvh;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent accidental text selection during touch drags on controls */
+button, [role="button"], input[type="submit"] {
+  touch-action: manipulation;
+}
+
+/* Ensure mobile touch targets and eliminate iOS auto-zoom on inputs */
+@media (max-width: 640px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Conic Loader Animation (l27-0 and l27-1) */
+.cecilian-loader {
+  width: 50px;
+  aspect-ratio: 1.154;
+  position: relative;
+  background: conic-gradient(
+    from 120deg at 50% 64%,
+    #0000,
+    #8B181B 1deg 120deg,
+    #0000 121deg
+  );
+  animation: l27-0 1.5s infinite cubic-bezier(0.3, 1, 0, 1);
+}
+
+.cecilian-loader-red {
+  background: conic-gradient(
+    from 120deg at 50% 64%,
+    #0000,
+    #ff1919 1deg 120deg,
+    #0000 121deg
+  );
+}
+
+.cecilian-loader:before,
+.cecilian-loader:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  transform-origin: 50% 66%;
+  animation: l27-1 1.5s infinite;
+}
+
+.cecilian-loader:after {
+  --s: -1;
+}
+
+@keyframes l27-0 {
+  0%,
+  30% {
+    transform: rotate(0);
+  }
+
+  70% {
+    transform: rotate(120deg);
+  }
+
+  70.01%,
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes l27-1 {
+  0% {
+    transform: rotate(calc(var(--s, 1) * 120deg)) translate(0);
+  }
+
+  30%,
+  70% {
+    transform: rotate(calc(var(--s, 1) * 120deg))
+      translate(calc(var(--s, 1) * -5px), 10px);
+  }
+
+  100% {
+    transform: rotate(calc(var(--s, 1) * 120deg)) translate(0);
+  }
+}
+
+/* Liquid Gooey Filter and Morphing Blob Animations */
+.gooey-effect {
+  filter: url(#gooey-filter);
+}
+
+.gooey-subtle {
+  filter: url(#gooey-subtle);
+}
+
+@keyframes gooey-drift-1 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  33% {
+    transform: translate(24px, -18px) scale(1.12);
+  }
+  66% {
+    transform: translate(-18px, 14px) scale(0.92);
+  }
+}
+
+@keyframes gooey-drift-2 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  40% {
+    transform: translate(-22px, 20px) scale(1.15);
+  }
+  75% {
+    transform: translate(16px, -16px) scale(0.88);
+  }
+}
+
+@keyframes gooey-drift-3 {
+  0%, 100% {
+    transform: translate(0px, 0px) scale(1);
+  }
+  50% {
+    transform: translate(14px, 18px) scale(1.08);
+  }
+}
+
+@keyframes gooey-pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.85;
+  }
+}
+
+.animate-gooey-blob-1 {
+  animation: gooey-drift-1 9s ease-in-out infinite alternate;
+}
+
+.animate-gooey-blob-2 {
+  animation: gooey-drift-2 12s ease-in-out infinite alternate;
+}
+
+.animate-gooey-blob-3 {
+  animation: gooey-drift-3 15s ease-in-out infinite alternate;
+}
+
+.animate-gooey-pulse {
+  animation: gooey-pulse 4s ease-in-out infinite;
+}
+
+@theme inline {
+  --font-heading: var(--font-sans);
+  --font-sans: 'Geist Variable', sans-serif;
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --color-foreground: var(--foreground);
+  --color-background: var(--background);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+}
+
+:root {
+  --background: oklch(1 0 0);
+  --foreground: oklch(0.145 0 0);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.145 0 0);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.145 0 0);
+  --primary: oklch(0.205 0 0);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.97 0 0);
+  --secondary-foreground: oklch(0.205 0 0);
+  --muted: oklch(0.97 0 0);
+  --muted-foreground: oklch(0.556 0 0);
+  --accent: oklch(0.97 0 0);
+  --accent-foreground: oklch(0.205 0 0);
+  --destructive: oklch(0.577 0.245 27.325);
+  --border: oklch(0.922 0 0);
+  --input: oklch(0.922 0 0);
+  --ring: oklch(0.708 0 0);
+  --chart-1: oklch(0.87 0 0);
+  --chart-2: oklch(0.556 0 0);
+  --chart-3: oklch(0.439 0 0);
+  --chart-4: oklch(0.371 0 0);
+  --chart-5: oklch(0.269 0 0);
+  --radius: 0.625rem;
+  --sidebar: oklch(0.985 0 0);
+  --sidebar-foreground: oklch(0.145 0 0);
+  --sidebar-primary: oklch(0.205 0 0);
+  --sidebar-primary-foreground: oklch(0.985 0 0);
+  --sidebar-accent: oklch(0.97 0 0);
+  --sidebar-accent-foreground: oklch(0.205 0 0);
+  --sidebar-border: oklch(0.922 0 0);
+  --sidebar-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --background: #121316;
+  --foreground: #f5f5f4;
+  --card: #1c1917;
+  --card-foreground: #f5f5f4;
+  --popover: #1c1917;
+  --popover-foreground: #f5f5f4;
+  --primary: #8B181B;
+  --primary-foreground: #ffffff;
+  --secondary: #292524;
+  --secondary-foreground: #f5f5f4;
+  --muted: #242220;
+  --muted-foreground: #a8a29e;
+  --accent: #292524;
+  --accent-foreground: #f5f5f4;
+  --destructive: #ef4444;
+  --border: rgba(255, 255, 255, 0.08);
+  --input: rgba(255, 255, 255, 0.12);
+  --ring: #8B181B;
+  --chart-1: #8B181B;
+  --chart-2: #10b981;
+  --chart-3: #f59e0b;
+  --chart-4: #3b82f6;
+  --chart-5: #a855f7;
+  --sidebar: #181615;
+  --sidebar-foreground: #f5f5f4;
+  --sidebar-primary: #8B181B;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #242220;
+  --sidebar-accent-foreground: #f5f5f4;
+  --sidebar-border: rgba(255, 255, 255, 0.08);
+  --sidebar-ring: #8B181B;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+/* ========================================================
+   ST. CECILIA'S COLLEGIATE DARK MODE SYSTEM
+   Authentic rich charcoal & warm stone palette (#121316 / #1c1917)
+   Calibrated for high contrast, zero color bleeding, and pristine branding.
+   ======================================================== */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark body {
+  background-color: #121316;
+  color: #f5f5f4;
+}
+
+/* Base Surfaces & Cards in Dark Mode (when dark:bg is not explicitly specified) */
+html.dark .bg-white:not([class*="dark:bg-"]),
+html.dark .bg-\[\#FFFFFF\]:not([class*="dark:bg-"]),
+html.dark .bg-\[\#ffffff\]:not([class*="dark:bg-"]),
+html.dark .bg-\[\#FAF9F6\]:not([class*="dark:bg-"]) {
+  background-color: #1c1917;
+}
+
+html.dark .bg-white\/95:not([class*="dark:bg-"]),
+html.dark .bg-white\/90:not([class*="dark:bg-"]),
+html.dark .bg-white\/80:not([class*="dark:bg-"]),
+html.dark .bg-white\/70:not([class*="dark:bg-"]),
+html.dark .bg-white\/60:not([class*="dark:bg-"]),
+html.dark .bg-white\/50:not([class*="dark:bg-"]) {
+  background-color: rgba(28, 25, 23, 0.92);
+}
+
+/* App Canvas & Sub-surfaces in Dark Mode */
+html.dark .bg-\[\#F9FAFB\]:not([class*="dark:bg-"]),
+html.dark .bg-\[\#F8FAFC\]:not([class*="dark:bg-"]),
+html.dark .bg-\[\#0B1120\]:not([class*="dark:bg-"]),
+html.dark .bg-stone-50\/50:not([class*="dark:bg-"]) {
+  background-color: #121316;
+}
+
+/* Elevated Sub-surfaces, Chips, Insets & Micro-cards */
+html.dark .bg-stone-50:not([class*="dark:bg-"]),
+html.dark .bg-stone-50\/40:not([class*="dark:bg-"]),
+html.dark .bg-stone-50\/60:not([class*="dark:bg-"]),
+html.dark .bg-stone-50\/70:not([class*="dark:bg-"]),
+html.dark .bg-stone-100:not([class*="dark:bg-"]),
+html.dark .bg-stone-100\/60:not([class*="dark:bg-"]),
+html.dark .bg-stone-100\/70:not([class*="dark:bg-"]),
+html.dark .bg-gray-50:not([class*="dark:bg-"]),
+html.dark .bg-slate-50:not([class*="dark:bg-"]),
+html.dark .bg-zinc-50:not([class*="dark:bg-"]),
+html.dark .bg-neutral-50:not([class*="dark:bg-"]) {
+  background-color: #242220;
+}
+
+html.dark .bg-stone-50\/80:not([class*="dark:bg-"]),
+html.dark .bg-stone-50\/90:not([class*="dark:bg-"]),
+html.dark .bg-stone-100\/80:not([class*="dark:bg-"]),
+html.dark .bg-stone-100\/90:not([class*="dark:bg-"]) {
+  background-color: rgba(36, 34, 32, 0.88);
+}
+
+html.dark .bg-stone-200:not([class*="dark:bg-"]),
+html.dark .bg-stone-200\/60:not([class*="dark:bg-"]),
+html.dark .bg-stone-200\/80:not([class*="dark:bg-"]),
+html.dark .bg-stone-300:not([class*="dark:bg-"]),
+html.dark .bg-gray-100:not([class*="dark:bg-"]),
+html.dark .bg-slate-100:not([class*="dark:bg-"]),
+html.dark .bg-zinc-100:not([class*="dark:bg-"]),
+html.dark .bg-neutral-100:not([class*="dark:bg-"]) {
+  background-color: #292524;
+}
+
+/* Typography in Dark Mode (when dark:text is not explicitly specified) */
+html.dark .text-stone-900:not([class*="dark:text-"]),
+html.dark .text-stone-800:not([class*="dark:text-"]),
+html.dark .text-stone-950:not([class*="dark:text-"]),
+html.dark .text-gray-900:not([class*="dark:text-"]),
+html.dark .text-gray-800:not([class*="dark:text-"]),
+html.dark .text-slate-900:not([class*="dark:text-"]),
+html.dark .text-slate-800:not([class*="dark:text-"]),
+html.dark .text-zinc-900:not([class*="dark:text-"]),
+html.dark .text-zinc-800:not([class*="dark:text-"]),
+html.dark .text-neutral-900:not([class*="dark:text-"]),
+html.dark .text-neutral-800:not([class*="dark:text-"]),
+html.dark .text-\[\#111827\]:not([class*="dark:text-"]) {
+  color: #f5f5f4;
+}
+
+html.dark .text-stone-700:not([class*="dark:text-"]),
+html.dark .text-stone-600:not([class*="dark:text-"]),
+html.dark .text-gray-700:not([class*="dark:text-"]),
+html.dark .text-gray-600:not([class*="dark:text-"]),
+html.dark .text-slate-700:not([class*="dark:text-"]),
+html.dark .text-slate-600:not([class*="dark:text-"]),
+html.dark .text-zinc-700:not([class*="dark:text-"]),
+html.dark .text-zinc-600:not([class*="dark:text-"]),
+html.dark .text-neutral-700:not([class*="dark:text-"]),
+html.dark .text-neutral-600:not([class*="dark:text-"]),
+html.dark .text-\[\#374151\]:not([class*="dark:text-"]),
+html.dark .text-\[\#4B5563\]:not([class*="dark:text-"]) {
+  color: #d6d3d1;
+}
+
+html.dark .text-stone-500:not([class*="dark:text-"]),
+html.dark .text-stone-400:not([class*="dark:text-"]),
+html.dark .text-gray-500:not([class*="dark:text-"]),
+html.dark .text-gray-400:not([class*="dark:text-"]),
+html.dark .text-slate-500:not([class*="dark:text-"]),
+html.dark .text-slate-400:not([class*="dark:text-"]),
+html.dark .text-zinc-500:not([class*="dark:text-"]),
+html.dark .text-zinc-400:not([class*="dark:text-"]),
+html.dark .text-neutral-500:not([class*="dark:text-"]),
+html.dark .text-neutral-400:not([class*="dark:text-"]),
+html.dark .text-\[\#6B7280\]:not([class*="dark:text-"]) {
+  color: #a8a29e;
+}
+
+html.dark .text-stone-300:not([class*="dark:text-"]) {
+  color: #78716c;
+}
+
+/* Borders in Dark Mode (when dark:border is not explicitly specified) */
+html.dark .border-stone-100:not([class*="dark:border-"]),
+html.dark .border-stone-150:not([class*="dark:border-"]),
+html.dark .border-stone-200:not([class*="dark:border-"]),
+html.dark .border-stone-200\/90:not([class*="dark:border-"]),
+html.dark .border-stone-200\/80:not([class*="dark:border-"]),
+html.dark .border-stone-200\/70:not([class*="dark:border-"]),
+html.dark .border-stone-200\/60:not([class*="dark:border-"]),
+html.dark .border-stone-300:not([class*="dark:border-"]),
+html.dark .border-\[\#E5E7EB\]:not([class*="dark:border-"]),
+html.dark .border-gray-100:not([class*="dark:border-"]),
+html.dark .border-gray-200:not([class*="dark:border-"]),
+html.dark .border-slate-100:not([class*="dark:border-"]),
+html.dark .border-slate-200:not([class*="dark:border-"]),
+html.dark .border-zinc-200:not([class*="dark:border-"]),
+html.dark .border-neutral-200:not([class*="dark:border-"]) {
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+html.dark .divide-stone-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-stone-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-100 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-gray-200 > :not([hidden]) ~ :not([hidden]),
+html.dark .divide-slate-200 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+
+/* Interactive States in Dark Mode */
+html.dark .hover\:bg-stone-50:not([class*="dark:hover:bg-"]):hover,
+html.dark .hover\:bg-stone-100:not([class*="dark:hover:bg-"]):hover,
+html.dark .hover\:bg-stone-200:not([class*="dark:hover:bg-"]):hover,
+html.dark .hover\:bg-gray-50:not([class*="dark:hover:bg-"]):hover,
+html.dark .hover\:bg-slate-50:not([class*="dark:hover:bg-"]):hover,
+html.dark .hover\:bg-white:not([class*="dark:hover:bg-"]):hover {
+  background-color: #292524;
+}
+
+/* ========================================================
+   PRIMARY CRIMSON BUTTONS & ACCENTS IN DARK MODE
+   Buttons maintain pure white text and vibrant crimson background.
+   ======================================================== */
+html.dark .bg-\[\#8B181B\],
+html.dark .bg-\[\#721316\],
+html.dark .bg-\[\#991B1B\],
+html.dark button.bg-\[\#8B181B\],
+html.dark button.bg-\[\#721316\],
+html.dark button.bg-\[\#991B1B\] {
+  background-color: #8B181B;
+  color: #ffffff;
+}
+
+html.dark button.bg-\[\#8B181B\] > span,
+html.dark button.bg-\[\#8B181B\] > svg,
+html.dark button.bg-\[\#991B1B\] > span,
+html.dark button.bg-\[\#991B1B\] > svg,
+html.dark button.bg-\[\#721316\] > span,
+html.dark button.bg-\[\#721316\] > svg {
+  color: #ffffff;
+}
+
+html.dark .hover\:bg-\[\#721316\]:hover,
+html.dark .hover\:bg-\[\#7f1616\]:hover,
+html.dark .bg-\[\#8B181B\]:hover,
+html.dark .bg-\[\#991B1B\]:hover {
+  background-color: #a11d21;
+  color: #ffffff;
+}
+
+/* Crimson Text Links and Icons (Outside filled crimson buttons) */
+html.dark .text-\[\#8B181B\]:not(.bg-\[\#8B181B\]):not([class*="dark:text-"]),
+html.dark .text-\[\#991B1B\]:not(.bg-\[\#991B1B\]):not([class*="dark:text-"]),
+html.dark .text-red-700:not([class*="dark:text-"]),
+html.dark .text-red-800:not([class*="dark:text-"]),
+html.dark .text-rose-700:not([class*="dark:text-"]),
+html.dark .text-rose-800:not([class*="dark:text-"]) {
+  color: #fb7185;
+}
+
+/* Crimson / Red Status Badges in Dark Mode */
+html.dark .bg-red-50:not([class*="dark:bg-"]),
+html.dark .bg-red-100:not([class*="dark:bg-"]),
+html.dark .bg-rose-50:not([class*="dark:bg-"]),
+html.dark .bg-rose-100:not([class*="dark:bg-"]) {
+  background-color: rgba(225, 29, 72, 0.16);
+  border-color: rgba(251, 113, 133, 0.28);
+  color: #fb7185;
+}
+html.dark .border-red-200:not([class*="dark:border-"]),
+html.dark .border-rose-200:not([class*="dark:border-"]) {
+  border-color: rgba(251, 113, 133, 0.24);
+}
+
+/* Emerald / Green / Verified Status Badges in Dark Mode */
+html.dark .bg-emerald-50:not([class*="dark:bg-"]),
+html.dark .bg-emerald-100:not([class*="dark:bg-"]),
+html.dark .bg-green-50:not([class*="dark:bg-"]),
+html.dark .bg-green-100:not([class*="dark:bg-"]) {
+  background-color: rgba(16, 185, 129, 0.16);
+  border-color: rgba(52, 211, 153, 0.28);
+}
+html.dark .text-emerald-700:not([class*="dark:text-"]),
+html.dark .text-emerald-800:not([class*="dark:text-"]),
+html.dark .text-emerald-900:not([class*="dark:text-"]),
+html.dark .text-green-700:not([class*="dark:text-"]),
+html.dark .text-green-800:not([class*="dark:text-"]) {
+  color: #34d399;
+}
+html.dark .border-emerald-200:not([class*="dark:border-"]),
+html.dark .border-emerald-300:not([class*="dark:border-"]),
+html.dark .border-green-200:not([class*="dark:border-"]) {
+  border-color: rgba(52, 211, 153, 0.28);
+}
+
+/* Amber / Yellow / Warning Status Badges in Dark Mode */
+html.dark .bg-amber-50:not([class*="dark:bg-"]),
+html.dark .bg-amber-100:not([class*="dark:bg-"]),
+html.dark .bg-yellow-50:not([class*="dark:bg-"]),
+html.dark .bg-yellow-100:not([class*="dark:bg-"]) {
+  background-color: rgba(217, 119, 6, 0.16);
+  border-color: rgba(251, 191, 36, 0.28);
+}
+html.dark .text-amber-700:not([class*="dark:text-"]),
+html.dark .text-amber-800:not([class*="dark:text-"]),
+html.dark .text-amber-900:not([class*="dark:text-"]),
+html.dark .text-yellow-700:not([class*="dark:text-"]),
+html.dark .text-yellow-800:not([class*="dark:text-"]) {
+  color: #fbbf24;
+}
+html.dark .border-amber-200:not([class*="dark:border-"]),
+html.dark .border-amber-300:not([class*="dark:border-"]),
+html.dark .border-yellow-200:not([class*="dark:border-"]) {
+  border-color: rgba(251, 191, 36, 0.28);
+}
+
+/* Blue / Sky / Indigo / Info Status Badges in Dark Mode */
+html.dark .bg-blue-50:not([class*="dark:bg-"]),
+html.dark .bg-blue-100:not([class*="dark:bg-"]),
+html.dark .bg-sky-50:not([class*="dark:bg-"]),
+html.dark .bg-sky-100:not([class*="dark:bg-"]),
+html.dark .bg-indigo-50:not([class*="dark:bg-"]),
+html.dark .bg-indigo-100:not([class*="dark:bg-"]) {
+  background-color: rgba(59, 130, 246, 0.16);
+  border-color: rgba(96, 165, 250, 0.28);
+}
+html.dark .text-blue-700:not([class*="dark:text-"]),
+html.dark .text-blue-800:not([class*="dark:text-"]),
+html.dark .text-blue-900:not([class*="dark:text-"]),
+html.dark .text-sky-700:not([class*="dark:text-"]),
+html.dark .text-sky-800:not([class*="dark:text-"]),
+html.dark .text-indigo-700:not([class*="dark:text-"]),
+html.dark .text-indigo-800:not([class*="dark:text-"]) {
+  color: #60a5fa;
+}
+html.dark .border-blue-200:not([class*="dark:border-"]),
+html.dark .border-blue-300:not([class*="dark:border-"]),
+html.dark .border-sky-200:not([class*="dark:border-"]),
+html.dark .border-indigo-200:not([class*="dark:border-"]) {
+  border-color: rgba(96, 165, 250, 0.28);
+}
+
+/* Purple / Violet Status Badges in Dark Mode */
+html.dark .bg-purple-50:not([class*="dark:bg-"]),
+html.dark .bg-purple-100:not([class*="dark:bg-"]),
+html.dark .bg-violet-50:not([class*="dark:bg-"]),
+html.dark .bg-violet-100:not([class*="dark:bg-"]) {
+  background-color: rgba(168, 85, 247, 0.16);
+  border-color: rgba(192, 132, 252, 0.28);
+}
+html.dark .text-purple-700:not([class*="dark:text-"]),
+html.dark .text-purple-800:not([class*="dark:text-"]),
+html.dark .text-purple-900:not([class*="dark:text-"]),
+html.dark .text-violet-700:not([class*="dark:text-"]) {
+  color: #c084fc;
+}
+html.dark .border-purple-200:not([class*="dark:border-"]),
+html.dark .border-purple-300:not([class*="dark:border-"]),
+html.dark .border-violet-200:not([class*="dark:border-"]) {
+  border-color: rgba(192, 132, 252, 0.28);
+}
+
+/* Teal / Cyan Status Badges in Dark Mode */
+html.dark .bg-teal-50:not([class*="dark:bg-"]),
+html.dark .bg-teal-100:not([class*="dark:bg-"]) {
+  background-color: rgba(20, 184, 166, 0.16);
+  border-color: rgba(45, 212, 191, 0.28);
+}
+html.dark .text-teal-700:not([class*="dark:text-"]),
+html.dark .text-teal-800:not([class*="dark:text-"]) {
+  color: #2dd4bf;
+}
+html.dark .border-teal-200:not([class*="dark:border-"]),
+html.dark .border-teal-300:not([class*="dark:border-"]) {
+  border-color: rgba(45, 212, 191, 0.28);
+}
+
+/* Inputs, Textareas, Selects & Options in Dark Mode */
+html.dark input:not([type="checkbox"]):not([type="radio"]):not([type="submit"]):not([type="button"]):not([class*="dark:bg-"]),
+html.dark select:not([class*="dark:bg-"]),
+html.dark textarea:not([class*="dark:bg-"]) {
+  background-color: #242220;
+  color: #f5f5f4;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+html.dark select option {
+  background-color: #1c1917;
+  color: #f5f5f4;
+}
+
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: #78716c;
+}
+
+/* Modals, Popovers & Menus in Dark Mode */
+html.dark .bg-white.rounded-2xl:not([class*="dark:bg-"]),
+html.dark .bg-white.rounded-3xl:not([class*="dark:bg-"]),
+html.dark .bg-white.rounded-xl:not([class*="dark:bg-"]),
+html.dark [role="menu"]:not([class*="dark:bg-"]),
+html.dark [role="dialog"]:not([class*="dark:bg-"]) {
+  background-color: #1c1917;
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Table Headers and Rows in Dark Mode */
+html.dark table thead th:not([class*="dark:bg-"]) {
+  background-color: #242220;
+  color: #a8a29e;
+  border-color: rgba(255, 255, 255, 0.08);
+}
+html.dark table tbody tr {
+  border-color: rgba(255, 255, 255, 0.06);
+}
+html.dark table tbody tr:hover {
+  background-color: #292524;
+}
+
+/* Keyboard Badges & Code Blocks in Dark Mode */
+html.dark kbd {
+  background-color: #242220;
+  color: #d6d3d1;
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+/* Footer in Dark Mode */
+html.dark footer {
+  background-color: #161514;
+  border-color: rgba(255, 255, 255, 0.08);
+  color: #a8a29e;
+}
+
+/* Custom Scrollbar in Dark Mode */
+html.dark ::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+html.dark ::-webkit-scrollbar-track {
+  background: #121316;
+}
+html.dark ::-webkit-scrollbar-thumb {
+  background: #292524;
+  border-radius: 9999px;
+}
+html.dark ::-webkit-scrollbar-thumb:hover {
+  background: #44403c;
+}
+
+/* Fluid UI Micro-interactions & Accessible Motion */
+@layer utilities {
+  .subtle-lift {
+    transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .subtle-lift:hover {
+    transform: translateY(-2px);
+  }
+  .subtle-lift:active {
+    transform: translateY(0px) scale(0.99);
+  }
+
+  .interactive-tap {
+    transition: transform 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .interactive-tap:active {
+    transform: scale(0.97);
+  }
+
+  .glass-card {
+    background: rgba(255, 255, 255, 0.88);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+  }
+  html.dark .glass-card {
+    background: rgba(24, 22, 21, 0.88);
+  }
+
+  .sidebar-proximity-glow {
+    box-shadow: 0 0 24px -4px rgba(139, 24, 27, 0.15);
+  }
+}
+
+/* ==========================================================================
+   UNIVERSAL LIQUID GOOEY HOVER ANIMATION FOR BUTTONS
+   Elastic morphing physics, liquid spring rebound & organic radial sheen
+   ========================================================================== */
+@keyframes gooey-button-hover {
+  0% {
+    transform: translateY(0) scale(1, 1);
+  }
+  35% {
+    transform: translateY(-2.5px) scale(1.035, 0.97);
+  }
+  70% {
+    transform: translateY(-1.5px) scale(0.985, 1.025);
+  }
+  100% {
+    transform: translateY(-2px) scale(1.02, 1.01);
+  }
+}
+
+@keyframes gooey-liquid-squish {
+  0% {
+    transform: translateY(-2px) scale(1.02, 1.01);
+  }
+  100% {
+    transform: translateY(1px) scale(0.96, 0.94);
+  }
+}
+
+/* Apply organic liquid gooey response to all interactive buttons */
+button:not([disabled]):not(.no-gooey):not(.absolute):not([class*="absolute"]) {
+  position: relative;
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              box-shadow 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+              filter 0.25s ease,
+              background-color 0.2s ease,
+              border-color 0.2s ease;
+  will-change: transform;
+}
+
+button.absolute, button[class*="absolute"] {
+  position: absolute !important;
+}
+
+button:not([disabled]):not(.no-gooey):hover {
+  animation: gooey-button-hover 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  box-shadow: 0 8px 24px -4px rgba(139, 24, 27, 0.18),
+              0 3px 8px -2px rgba(0, 0, 0, 0.06);
+}
+
+html.dark button:not([disabled]):not(.no-gooey):hover {
+  box-shadow: 0 8px 24px -4px rgba(139, 24, 27, 0.35),
+              0 3px 8px -2px rgba(0, 0, 0, 0.4);
+}
+
+button:not([disabled]):not(.no-gooey):active {
+  animation: gooey-liquid-squish 0.12s ease-out forwards;
+}
+
+/* Subtle liquid light diffusion aura on hover */
+button:not([disabled]):not(.no-gooey)::after {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  opacity: 0;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.22) 0%, rgba(255, 255, 255, 0.05) 50%, transparent 75%);
+  transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform: scale(0.85);
+  z-index: 1;
+}
+
+button:not([disabled]):not(.no-gooey):hover::after {
+  opacity: 1;
+  transform: scale(1.02);
+}
+
+html.dark button:not([disabled]):not(.no-gooey)::after {
+  background: radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.03) 50%, transparent 75%);
+}
+
+/* Enhanced gooey flare on primary institutional crimson buttons */
+button.bg-\[\#8B181B\]:not([disabled]):hover,
+button.bg-red-800:not([disabled]):hover,
+button.bg-red-900:not([disabled]):hover {
+  box-shadow: 0 10px 28px -4px rgba(139, 24, 27, 0.38),
+              0 4px 12px -2px rgba(139, 24, 27, 0.22);
+}
+
+
+

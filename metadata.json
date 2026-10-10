@@ -1,0 +1,8 @@
+{
+  "name": "HOGWARTS",
+  "description": "Official St. Cecilia\u0027s College alumni portal featuring multi-role authentication, personalized dashboards, verified directories, messaging, events, and institutional administration.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}

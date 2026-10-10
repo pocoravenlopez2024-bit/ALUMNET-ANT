@@ -1,0 +1,107 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Capacitor Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup Android SDK Environment and Accept Licenses
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME" >> $GITHUB_ENV
+          sudo chown -R $USER:$USER "$ANDROID_HOME"
+          mkdir -p "$ANDROID_HOME/licenses"
+          printf "24333f8a63518b10e4259d4b494533038161f276\nd56f5187479451eabf01fb78af6dfcb131a6481e\n84831b9409646a201e684425cb940368b571e50e\n" > "$ANDROID_HOME/licenses/android-sdk-license"
+          printf "84831b9409646a201e684425cb940368b571e50e\n" > "$ANDROID_HOME/licenses/android-sdk-preview-license"
+          printf "601085b94cd77f0b54ff864069554465b3877918\n" > "$ANDROID_HOME/licenses/android-googletv-license"
+          printf "33b6a2b649079729d6e5e472280c89f1e1e9eab9\n" > "$ANDROID_HOME/licenses/google-gdk-license"
+          printf "e9acab583e2349a6831cb6e44f58e454e3aad48a\n" > "$ANDROID_HOME/licenses/mips-android-sysimage-license"
+
+          # Discover sdkmanager binary path
+          SDKMANAGER=$(find "$ANDROID_HOME" -name sdkmanager -type f -perm /111 2>/dev/null | head -n 1)
+          if [ -n "$SDKMANAGER" ]; then
+            echo "Found sdkmanager at: $SDKMANAGER"
+            yes | "$SDKMANAGER" --licenses || true
+            "$SDKMANAGER" --install "platforms;android-36" "platforms;android-35" "build-tools;36.0.0" "build-tools;35.0.0" || true
+          fi
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build Web Assets and Sync Capacitor
+        run: |
+          npm run build
+          npx cap sync android
+
+      - name: Make Gradlew Executable
+        run: chmod +x ./android/gradlew
+
+      - name: Build Debug APK with Gradle
+        run: |
+          set -o pipefail
+          cd android
+          ./gradlew assembleDebug --no-daemon --stacktrace 2>&1 | tee ../gradle-build.log
+
+      - name: Output Build Log on Failure
+        if: failure()
+        run: |
+          echo "## Gradle Failure Output" >> $GITHUB_STEP_SUMMARY
+          echo '```text' >> $GITHUB_STEP_SUMMARY
+          if [ -f gradle-build.log ]; then
+            tail -n 120 gradle-build.log >> $GITHUB_STEP_SUMMARY
+          fi
+          echo '```' >> $GITHUB_STEP_SUMMARY
+
+      - name: Collect and Stage Generated APK
+        run: |
+          mkdir -p build-artifacts
+          echo "Searching for newly built APK in android/app/build/outputs/apk/..."
+          find android/app/build/outputs/apk/ -type f -name "*.apk" -ls || true
+
+          # Look for the debug APK output first
+          APK_FILE=$(find android/app/build/outputs/apk/ -type f -name "*debug*.apk" | head -n 1)
+          if [ -z "$APK_FILE" ]; then
+            APK_FILE=$(find android/app/build/outputs/apk/ -type f -name "*.apk" | head -n 1)
+          fi
+
+          if [ -n "$APK_FILE" ] && [ -f "$APK_FILE" ]; then
+            echo "Copying $APK_FILE to build-artifacts/cecilian-alumnet-debug.apk"
+            cp "$APK_FILE" build-artifacts/cecilian-alumnet-debug.apk
+            ls -lh build-artifacts/
+            echo "### Build Succeeded" >> $GITHUB_STEP_SUMMARY
+            echo "Generated APK: \`cecilian-alumnet-debug.apk\` ($(du -h build-artifacts/cecilian-alumnet-debug.apk | cut -f1))" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "::error::No built APK found in android/app/build/outputs/apk/"
+            find android/app/build -maxdepth 4 -ls || true
+            exit 1
+          fi
+
+      - name: Upload Debug APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: cecilian-alumnet-debug-apk
+          path: build-artifacts/cecilian-alumnet-debug.apk
+          if-no-files-found: error
+

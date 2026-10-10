@@ -1,0 +1,51 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="sccBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#8B181B" />
+      <stop offset="100%" stop-color="#5B0F11" />
+    </linearGradient>
+    <linearGradient id="goldTrim" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="100%" stop-color="#D97706" />
+    </linearGradient>
+    <filter id="subtleDrop" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="2" stdDeviation="3" flood-opacity="0.3" />
+    </filter>
+  </defs>
+
+  <!-- Circular Crimson Background -->
+  <circle cx="100" cy="100" r="98" fill="url(#sccBg)" stroke="url(#goldTrim)" stroke-width="4" />
+
+  <!-- Subtle Concentric Inner Border -->
+  <circle cx="100" cy="100" r="90" fill="none" stroke="rgba(255,255,255,0.18)" stroke-width="1.5" stroke-dasharray="4 2" />
+
+  <!-- Graduate Mortarboard Cap -->
+  <g filter="url(#subtleDrop)" fill="#FFFFFF">
+    <!-- Cap top diamond -->
+    <polygon points="100,42 142,57 100,72 58,57" fill="#F8FAFC" />
+    <polygon points="100,42 100,72 58,57" fill="#E2E8F0" />
+    <!-- Skull cap underneath -->
+    <path d="M74,62 C74,74 86,81 100,81 C114,81 126,74 126,62 Z" fill="#CBD5E1" />
+    <!-- Tassel ribbon -->
+    <path d="M100,57 C108,60 128,68 130,82" fill="none" stroke="#F59E0B" stroke-width="2.5" stroke-linecap="round" />
+    <!-- Tassel tip -->
+    <circle cx="130" cy="83" r="2.5" fill="#F59E0B" />
+    <path d="M128,83 L132,83 L131,92 L129,92 Z" fill="#F59E0B" />
+  </g>
+
+  <!-- Stylized Alumni Silhouette -->
+  <g fill="#FFFFFF" opacity="0.95" filter="url(#subtleDrop)">
+    <!-- Head -->
+    <circle cx="100" cy="98" r="21" fill="#F8FAFC" />
+    <!-- Shoulders & Gown -->
+    <path d="M52,168 C52,136 74,124 100,124 C126,124 148,136 148,168 C148,172 144,175 140,175 L60,175 C56,175 52,172 52,168 Z" fill="#F1F5F9" />
+    <!-- Stole / Sash Ribbon with St. Cecilia Gold -->
+    <path d="M84,127 L95,152 L91,175 L80,175 L84,127 Z" fill="url(#goldTrim)" />
+    <path d="M116,127 L105,152 L109,175 L120,175 L116,127 Z" fill="url(#goldTrim)" />
+  </g>
+
+  <!-- Institutional Laurel / Star Accent at Bottom -->
+  <circle cx="100" cy="186" r="2" fill="#F59E0B" />
+  <circle cx="92" cy="186" r="1.5" fill="rgba(245,158,11,0.6)" />
+  <circle cx="108" cy="186" r="1.5" fill="rgba(245,158,11,0.6)" />
+</svg>

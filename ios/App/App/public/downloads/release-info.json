@@ -1,0 +1,10 @@
+{
+  "app_name": "Cecilian Alumnet",
+  "package_name": "com.aistudio.applet.cnztsm",
+  "version": "1.0.0",
+  "version_code": 1,
+  "release_date": "2026-10-01",
+  "min_sdk": 21,
+  "target_sdk": 34,
+  "download_url": "/downloads/cecilian-alumnet.apk"
+}

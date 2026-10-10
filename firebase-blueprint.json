@@ -1,0 +1,290 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Alumni, staff, or admin user profile with contact, education, and career details",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "role": { "type": "string", "enum": ["alumni", "admin", "registrar", "staff", "moderator", "employer", "student"] },
+        "batch": { "type": "string", "maxLength": 10 },
+        "course": { "type": "string", "maxLength": 100 },
+        "location": { "type": "string", "maxLength": 100 },
+        "profilePictureUrl": { "type": "string" },
+        "coverPhotoUrl": { "type": "string" },
+        "headline": { "type": "string", "maxLength": 160 },
+        "about": { "type": "string", "maxLength": 2000 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "quickStatus": { "type": "string" },
+        "quickStatusUpdatedAt": { "type": "string" },
+        "followersCount": { "type": "number" },
+        "followingCount": { "type": "number" },
+        "connectionsCount": { "type": "number" }
+      },
+      "required": ["uid", "name", "email", "role"]
+    },
+    "FriendRequest": {
+      "title": "Friend Request",
+      "description": "Alumni to alumni connection request",
+      "type": "object",
+      "properties": {
+        "fromUid": { "type": "string" },
+        "toUid": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["fromUid", "toUid", "status", "createdAt"]
+    },
+    "Chat": {
+      "title": "Chat Thread",
+      "description": "Real-time chat thread between two members",
+      "type": "object",
+      "properties": {
+        "memberIds": { "type": "array" },
+        "lastMessage": { "type": "string", "maxLength": 500 },
+        "lastMessageAt": { "type": "string" },
+        "unreadCount": { "type": "object" }
+      },
+      "required": ["memberIds"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "Individual message inside a chat thread",
+      "type": "object",
+      "properties": {
+        "text": { "type": "string", "maxLength": 2000 },
+        "senderId": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["text", "senderId", "createdAt"]
+    },
+    "Notification": {
+      "title": "App Notification",
+      "description": "User notification for requests, messages, broadcasts",
+      "type": "object",
+      "properties": {
+        "toUid": { "type": "string" },
+        "fromUid": { "type": "string" },
+        "type": { "type": "string" },
+        "title": { "type": "string", "maxLength": 150 },
+        "body": { "type": "string", "maxLength": 500 },
+        "refId": { "type": "string" },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["toUid", "type", "title", "body", "read", "createdAt"]
+    },
+    "Event": {
+      "title": "Alumni Event",
+      "description": "University and chapter reunions, webinars, and workshops",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "description": { "type": "string", "maxLength": 5000 },
+        "location": { "type": "string", "maxLength": 150 },
+        "type": { "type": "string" },
+        "startDate": { "type": "string" },
+        "endDate": { "type": "string" },
+        "heroImageUrl": { "type": "string" },
+        "isVirtual": { "type": "boolean" },
+        "isImportant": { "type": "boolean" },
+        "maxAttendees": { "type": "number" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["title", "description", "startDate", "location", "createdBy"]
+    },
+    "Announcement": {
+      "title": "University Announcement",
+      "description": "Official broadcast announcement posted by staff or admins",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 200 },
+        "content": { "type": "string", "maxLength": 5000 },
+        "important": { "type": "boolean" },
+        "imageUrl": { "type": "string" },
+        "attachments": { "type": "array" },
+        "publishedAt": { "type": "string" },
+        "createdBy": { "type": "string" }
+      },
+      "required": ["title", "content", "publishedAt", "createdBy"]
+    },
+    "Opportunity": {
+      "title": "Job or Mentorship Opportunity",
+      "description": "Career opportunities and mentorship postings for alumni",
+      "type": "object",
+      "properties": {
+        "title": { "type": "string", "maxLength": 150 },
+        "type": { "type": "string" },
+        "company": { "type": "string", "maxLength": 100 },
+        "location": { "type": "string", "maxLength": 100 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["title", "type", "company", "location"]
+    },
+    "JobApplication": {
+      "title": "Job Application",
+      "description": "Applicant submission to a posted opportunity with resume and cover letter",
+      "type": "object",
+      "properties": {
+        "jobId": { "type": "string" },
+        "applicantUid": { "type": "string" },
+        "applicantName": { "type": "string", "maxLength": 100 },
+        "applicantEmail": { "type": "string", "maxLength": 120 },
+        "employerUid": { "type": "string" },
+        "status": { "type": "string", "enum": ["submitted", "reviewing", "shortlisted", "rejected", "accepted"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["jobId", "applicantUid", "applicantName", "status", "createdAt"]
+    },
+    "RegistryRecord": {
+      "title": "Registrar Student Record",
+      "description": "Accredited graduate and student records uploaded by Registrar via CSV/Excel for auto-registration matching",
+      "type": "object",
+      "properties": {
+        "studentId": { "type": "string", "maxLength": 50 },
+        "fullName": { "type": "string", "maxLength": 100 },
+        "batchYear": { "type": "string", "maxLength": 10 },
+        "course": { "type": "string", "maxLength": 100 },
+        "status": { "type": "string", "enum": ["Graduated", "Enrolled", "Alumni"] },
+        "honors": { "type": "string", "maxLength": 100 },
+        "email": { "type": "string", "maxLength": 120 },
+        "phone": { "type": "string", "maxLength": 30 },
+        "isRegistered": { "type": "boolean" },
+        "registeredAt": { "type": "string" },
+        "matchedUid": { "type": "string" },
+        "uploadedAt": { "type": "string" },
+        "uploadedBy": { "type": "string" },
+        "sourceFile": { "type": "string" }
+      },
+      "required": ["studentId", "fullName", "batchYear", "course"]
+    },
+    "Conversation": {
+      "title": "Conversation Thread",
+      "description": "Direct conversation isolated by participant userIds",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array" },
+        "lastMessage": { "type": "string", "maxLength": 500 },
+        "lastMessageAt": { "type": "string" },
+        "unreadCount": { "type": "object" }
+      },
+      "required": ["participants"]
+    },
+    "ConversationMessage": {
+      "title": "Conversation Message",
+      "description": "Individual message inside an isolated conversation",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "text": { "type": "string", "maxLength": 2000 },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["userId", "text", "createdAt"]
+    },
+    "Connection": {
+      "title": "Connection Status",
+      "description": "Connection document linking two users with status",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "connectedUserId": { "type": "string" },
+        "participants": { "type": "array" },
+        "status": { "type": "string", "enum": ["pending", "accepted", "declined"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["userId", "connectedUserId", "status"]
+    },
+    "EventReservation": {
+      "title": "Event Reservation",
+      "description": "Alumni seat reservation record with guest breakdown and QR pass data",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "eventId": { "type": "string" },
+        "eventTitle": { "type": "string" },
+        "eventDate": { "type": "string" },
+        "userId": { "type": "string" },
+        "alumniName": { "type": "string" },
+        "email": { "type": "string" },
+        "contactNumber": { "type": "string" },
+        "alumniId": { "type": "string" },
+        "graduationYear": { "type": "string" },
+        "course": { "type": "string" },
+        "numberOfGuests": { "type": "number" },
+        "totalSeats": { "type": "number" },
+        "status": { "type": "string", "enum": ["confirmed", "waitlisted", "cancelled", "attended"] },
+        "reservedAt": { "type": "string" },
+        "reminder24hSent": { "type": "boolean" },
+        "reminder24hSentAt": { "type": "string" },
+        "attendanceConfirmed": { "type": "boolean" },
+        "attendanceConfirmedAt": { "type": "string" }
+      },
+      "required": ["id", "eventId", "userId", "alumniName", "status", "reservedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{uid}": {
+      "schema": "User",
+      "description": "Collection of user profiles for alumni, staff, and admin"
+    },
+    "/registry_records/{recordId}": {
+      "schema": "RegistryRecord",
+      "description": "Accredited student records uploaded by Registrar for auto-registration matching"
+    },
+    "/friend_requests/{fromUid_toUid}": {
+      "schema": "FriendRequest",
+      "description": "Connection requests between alumni"
+    },
+    "/connections/{connectionId}": {
+      "schema": "Connection",
+      "description": "Connection status documents"
+    },
+    "/conversations/{conversationId}": {
+      "schema": "Conversation",
+      "description": "Participant-isolated conversations"
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": "ConversationMessage",
+      "description": "Messages inside participant-isolated conversations"
+    },
+    "/chats/{chatId}": {
+      "schema": "Chat",
+      "description": "Chat conversations between members"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": "ChatMessage",
+      "description": "Messages inside a conversation"
+    },
+    "/notifications/{id}": {
+      "schema": "Notification",
+      "description": "Direct and broadcast notifications"
+    },
+    "/events/{eventId}": {
+      "schema": "Event",
+      "description": "Scheduled events, reunions, and workshops"
+    },
+    "/event_reservations/{reservationId}": {
+      "schema": "EventReservation",
+      "description": "Alumni seat reservation passes"
+    },
+    "/announcements/{id}": {
+      "schema": "Announcement",
+      "description": "Official campus and alumni announcements"
+    },
+    "/opportunities/{id}": {
+      "schema": "Opportunity",
+      "description": "Curated career opportunities and jobs"
+    },
+    "/job_applications/{id}": {
+      "schema": "JobApplication",
+      "description": "Submissions and candidate applications for posted jobs"
+    },
+    "/feed_posts/{id}": {
+      "schema": "Announcement",
+      "description": "Institutional and alumni community social feed posts"
+    }
+  }
+}

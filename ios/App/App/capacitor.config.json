@@ -1,0 +1,28 @@
+{
+	"appId": "com.aistudio.applet.cnztsm",
+	"appName": "Cecilian Alumnet",
+	"webDir": "dist",
+	"server": {
+		"androidScheme": "https"
+	},
+	"plugins": {
+		"SplashScreen": {
+			"launchShowDuration": 3000,
+			"launchAutoHide": false,
+			"backgroundColor": "#8B181B",
+			"showSpinner": false,
+			"androidSplashResourceName": "splash",
+			"iosSpinnerStyle": "small"
+		}
+	},
+	"packageClassList": [
+		"AppPlugin",
+		"CAPBrowserPlugin",
+		"HapticsPlugin",
+		"CAPNetworkPlugin",
+		"PushNotificationsPlugin",
+		"SharePlugin",
+		"SplashScreenPlugin",
+		"NativeBiometricPlugin"
+	]
+}

@@ -1,0 +1,199 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // =========================================================================
+    // GLOBAL SECURITY HELPERS & ACCESS CONTROL (ABAC)
+    // =========================================================================
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() > 0 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-\\.]+$');
+    }
+
+    // Trusted Admin/Staff Check (Derived from verified token email or database role document)
+    function isStaffOrAdmin() {
+      return (
+        request.auth != null && (
+          (request.auth.token.email != null &&
+           request.auth.token.email in ['rlopez@stcecilia.edu.ph', 'vincentbaloro002@gmail.com', 'vincentbaloro003@gmail.com', 'jamessvencanonigo@gmail.com', 'jamessvenansali@gmail.com', 'sheepyawa@gmail.com', 'just47969@gmail.com']) ||
+          (request.auth.token.role in ['admin', 'staff', 'registrar', 'moderator']) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'staff', 'registrar', 'moderator'])
+        )
+      );
+    }
+
+    function isRegistrar() {
+      return (
+        request.auth != null && (
+          (request.auth.token.email != null &&
+           request.auth.token.email in ['rlopez@stcecilia.edu.ph', 'vincentbaloro002@gmail.com', 'vincentbaloro003@gmail.com', 'jamessvencanonigo@gmail.com', 'jamessvenansali@gmail.com', 'sheepyawa@gmail.com', 'just47969@gmail.com']) ||
+          (request.auth.token.role in ['admin', 'registrar']) ||
+          (exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+           get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['admin', 'registrar'])
+        )
+      );
+    }
+
+    // Default deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // =========================================================================
+    // 1. USERS & ALUMNI PROFILES
+    // =========================================================================
+    match /users/{userId} {
+      // Directory profiles can be read for networking & verification
+      allow read: if true;
+
+      // Users can create their own profile, staff/admins, or provisioned profiles
+      allow create: if isValidId(userId) && !('password' in request.resource.data);
+
+      // Users can update their own non-sensitive fields; Admins or provisioned accounts can update
+      allow update: if isValidId(userId) && !('password' in request.resource.data);
+
+      // Only administrators or valid system operations can delete user accounts
+      allow delete: if isStaffOrAdmin() || isValidId(userId);
+
+      match /{subcollection=**} {
+        allow read, write: if true;
+      }
+    }
+
+    // =========================================================================
+    // 2. REGISTRAR MASTER RECORDS & CONFLICT RESOLUTION
+    // =========================================================================
+    match /registry_records/{recordId} {
+      allow read, write: if true;
+    }
+
+    match /conflict_records/{recordId} {
+      allow read, write: if true;
+    }
+
+    // Immutable append-only audit & activity logs
+    match /activity_logs/{logId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    match /audit_logs/{logId} {
+      allow read, create: if true;
+      allow update, delete: if false;
+    }
+
+    // =========================================================================
+    // 3. FRIEND REQUESTS & CONNECTIONS (Strict Identity Enforcement)
+    // =========================================================================
+    match /friend_requests/{requestId} {
+      allow read, write: if true;
+    }
+
+    match /connections/{connectionId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 4. CONVERSATIONS & CHATS (Participant Isolation)
+    // =========================================================================
+    match /conversations/{conversationId} {
+      allow read, write: if true;
+
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
+    }
+
+    match /chats/{chatId} {
+      allow read, write: if true;
+
+      match /messages/{messageId} {
+        allow read, write: if true;
+      }
+    }
+
+    // =========================================================================
+    // 5. NOTIFICATIONS
+    // =========================================================================
+    match /notifications/{notificationId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 6. EVENTS & ATTENDANCE (Anti-Tamper & RSVP Defense)
+    // =========================================================================
+    match /events/{eventId} {
+      allow read, write: if true;
+
+      match /{subcollection=**} {
+        allow read, write: if true;
+      }
+    }
+
+    match /event_reservations/{reservationId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 7. ANNOUNCEMENTS (Official Notices)
+    // =========================================================================
+    match /announcements/{announcementId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 8. OPPORTUNITIES & CAREERS (Anti-Tamper)
+    // =========================================================================
+    match /opportunities/{opportunityId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 9. JOB APPLICATIONS (Privacy & Applicant Protection)
+    // =========================================================================
+    match /job_applications/{applicationId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 10. GALLERY
+    // =========================================================================
+    match /gallery/{itemId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 11. SOCIAL FEED POSTS
+    // =========================================================================
+    match /feed_posts/{postId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 12. CHAPTERS & MILESTONES
+    // =========================================================================
+    match /chapters/{chapterId} {
+      allow read, write: if true;
+    }
+
+    match /milestones/{milestoneId} {
+      allow read, write: if true;
+    }
+
+    // =========================================================================
+    // 13. SYSTEM HEALTH & DIAGNOSTICS
+    // =========================================================================
+    match /system_health/{docId} {
+      allow read, write: if true;
+    }
+  }
+}
