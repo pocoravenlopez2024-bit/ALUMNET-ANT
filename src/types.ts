@@ -177,6 +177,7 @@ export interface ChatMessage {
 export interface ChatThread {
   id: string;
   memberIds: string[];
+  participants?: string[];
   lastMessage: string;
   lastMessageAt: string;
   unreadCount: Record<string, number>; // uid -> count

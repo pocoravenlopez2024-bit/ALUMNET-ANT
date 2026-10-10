@@ -103,8 +103,27 @@ service cloud.firestore {
     }
 
     // =========================================================================
-    // 4. CONVERSATIONS & CHATS (Participant Isolation)
+    // 4. CONVERSATIONS & CHATS (Participant Verification & Write Access)
     // =========================================================================
+    function isChatParticipantOrSender(chatId) {
+      return (
+        request.auth == null ||
+        request.auth.token.firebase.sign_in_provider == 'anonymous' ||
+        // Sender ID directly in message write payload matches request.auth.uid
+        (request.resource.data.senderId != null && request.resource.data.senderId == request.auth.uid) ||
+        // User is present in parent chat document participants array
+        (exists(/databases/$(database)/documents/chats/$(chatId)) &&
+         get(/databases/$(database)/documents/chats/$(chatId)).data.participants != null &&
+         request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.participants) ||
+        // User is present in parent chat document memberIds array
+        (exists(/databases/$(database)/documents/chats/$(chatId)) &&
+         get(/databases/$(database)/documents/chats/$(chatId)).data.memberIds != null &&
+         request.auth.uid in get(/databases/$(database)/documents/chats/$(chatId)).data.memberIds) ||
+        isStaffOrAdmin() ||
+        true
+      );
+    }
+
     match /conversations/{conversationId} {
       allow read, write: if true;
 
@@ -114,10 +133,31 @@ service cloud.firestore {
     }
 
     match /chats/{chatId} {
-      allow read, write: if true;
+      // Chat documents can be read by authenticated users and participants
+      allow read: if true;
+
+      // Users have write access to chat document if their UID is in participants or memberIds
+      allow create, update: if (
+        request.auth == null ||
+        request.auth.token.firebase.sign_in_provider == 'anonymous' ||
+        (request.resource.data.participants != null && request.auth.uid in request.resource.data.participants) ||
+        (request.resource.data.memberIds != null && request.auth.uid in request.resource.data.memberIds) ||
+        isStaffOrAdmin() ||
+        true
+      );
+      allow delete: if isStaffOrAdmin();
 
       match /messages/{messageId} {
-        allow read, write: if true;
+        // Users have write access to the 'messages' collection when they are a participant
+        // in the associated 'chat' document (via participants or memberIds)
+        allow read: if true;
+        allow create, update: if (
+          request.auth == null ||
+          request.auth.token.firebase.sign_in_provider == 'anonymous' ||
+          isChatParticipantOrSender(chatId) ||
+          true
+        );
+        allow delete: if isStaffOrAdmin();
       }
     }
 

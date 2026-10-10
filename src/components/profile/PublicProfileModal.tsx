@@ -149,18 +149,24 @@ export const PublicProfileModal: React.FC = () => {
 
                   {!isSelf && (
                     <>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          getOrCreateChat(targetUser.uid);
+                          setSelectedUserIdForModal(null);
+                          setActiveTab('messages');
+                        }}
+                        className="justify-center flex items-center gap-2 px-4 py-2.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs cursor-pointer min-h-[42px] transition-colors"
+                      >
+                        <MessageSquare className="w-4 h-4 shrink-0" />
+                        <span>Message</span>
+                      </button>
+
                       {connected ? (
-                        <button
-                          onClick={() => {
-                            getOrCreateChat(targetUser.uid);
-                            setSelectedUserIdForModal(null);
-                            setActiveTab('messages');
-                          }}
-                          className="justify-center flex items-center gap-2 px-4 py-2.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs cursor-pointer min-h-[42px]"
-                        >
-                          <MessageSquare className="w-4 h-4 shrink-0" />
-                          <span>Message</span>
-                        </button>
+                        <div className="justify-center flex items-center gap-1.5 px-3.5 py-2.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/60 text-emerald-800 dark:text-emerald-300 rounded-xl text-xs sm:text-sm font-semibold min-h-[42px]">
+                          <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                          <span>Connected</span>
+                        </div>
                       ) : reqState === 'sent' ? (
                         <button
                           type="button"
@@ -197,8 +203,9 @@ export const PublicProfileModal: React.FC = () => {
                         </div>
                       ) : (
                         <button
+                          type="button"
                           onClick={() => sendFriendRequest(targetUser.uid)}
-                          className="justify-center flex items-center gap-2 px-4 py-2.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:shadow-md cursor-pointer transition-all active:scale-98 min-h-[42px]"
+                          className="justify-center flex items-center gap-2 px-4 py-2.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 border border-stone-200 dark:border-stone-700 rounded-xl text-xs sm:text-sm font-semibold shadow-xs hover:shadow-md cursor-pointer transition-all active:scale-98 min-h-[42px]"
                         >
                           <UserPlus className="w-4 h-4 shrink-0" />
                           <span>Connect</span>

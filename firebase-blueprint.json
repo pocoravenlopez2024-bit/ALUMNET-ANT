@@ -43,6 +43,7 @@
       "type": "object",
       "properties": {
         "memberIds": { "type": "array" },
+        "participants": { "type": "array" },
         "lastMessage": { "type": "string", "maxLength": 500 },
         "lastMessageAt": { "type": "string" },
         "unreadCount": { "type": "object" }

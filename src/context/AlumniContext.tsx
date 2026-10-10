@@ -79,6 +79,7 @@ import {
   subscribeToAnnouncements,
   saveChatToFirestore,
   saveChatMessageToFirestore,
+  logMessageSendingDiagnostics,
   saveNotificationToFirestore,
   getNotificationsFromFirestore,
   subscribeToUserNotifications,
@@ -1707,11 +1708,19 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
   useEffect(() => {
     if (!activeChatId) return;
     const unsub = subscribeToChatMessages(activeChatId, (cloudMsgs) => {
-      if (cloudMsgs && cloudMsgs.length > 0) {
-        setMessages((prev) => ({
-          ...prev,
-          [activeChatId]: cloudMsgs
-        }));
+      if (cloudMsgs) {
+        setMessages((prev) => {
+          const currentThreadMsgs = prev[activeChatId] || [];
+          const localPending = currentThreadMsgs.filter(
+            (m) => m.status === 'sending' || m.status === 'queued' || m.offlineQueued
+          );
+          const cloudIds = new Set(cloudMsgs.map((m) => m.id));
+          const uniquePending = localPending.filter((m) => !cloudIds.has(m.id));
+          return {
+            ...prev,
+            [activeChatId]: [...cloudMsgs, ...uniquePending]
+          };
+        });
       }
     });
     return () => unsub();
@@ -3125,37 +3134,58 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
   // Messaging operations
   const getOrCreateChat = (targetUid: string): string => {
-    if (!currentUser) return '';
+    if (!currentUser || !targetUid) return '';
+    // 1. Search for existing direct 1-on-1 chat in state
     const existingChat = chats.find(
-      (c) => (c.memberIds || (c as any).participants || []).includes(currentUser.uid) && (c.memberIds || (c as any).participants || []).includes(targetUid)
+      (c) =>
+        !c.isGroupChat &&
+        !c.isEventChat &&
+        (c.memberIds || (c as any).participants || []).includes(currentUser.uid) &&
+        (c.memberIds || (c as any).participants || []).includes(targetUid)
     );
     if (existingChat) {
       setActiveChatId(existingChat.id);
       return existingChat.id;
     }
 
-    // Create new chat
-    const newChatId = `chat_${Date.now()}`;
+    // 2. Deterministic ID ensures both peers converge on the EXACT same Firestore thread & collection path
+    const sortedUids = [currentUser.uid, targetUid].sort();
+    const deterministicChatId = `chat_${sortedUids[0]}_${sortedUids[1]}`;
+
+    // If deterministic chat already exists by ID
+    const existingById = chats.find((c) => c.id === deterministicChatId);
+    if (existingById) {
+      setActiveChatId(existingById.id);
+      return existingById.id;
+    }
+
+    const targetUser = users.find((u) => u.uid === targetUid);
     const newChat: ChatThread = {
-      id: newChatId,
+      id: deterministicChatId,
       memberIds: [currentUser.uid, targetUid],
       lastMessage: 'Conversation started',
       lastMessageAt: new Date().toISOString(),
       unreadCount: {
         [currentUser.uid]: 0,
         [targetUid]: 0
-      }
+      },
+      otherUser: targetUser,
+      isGroupChat: false,
+      isEventChat: false
     };
+    (newChat as any).participants = [currentUser.uid, targetUid];
 
     setChats((prev) => [newChat, ...prev]);
-    setMessages((prev) => ({ ...prev, [newChatId]: [] }));
-    setActiveChatId(newChatId);
-    saveChatToFirestore(newChat).catch(() => {});
-    return newChatId;
+    setMessages((prev) => ({ ...prev, [deterministicChatId]: [] }));
+    setActiveChatId(deterministicChatId);
+    saveChatToFirestore(newChat).catch((err) => {
+      console.warn('Background chat sync notice:', err);
+    });
+    return deterministicChatId;
   };
 
   const sendMessage = (chatId: string, text: string) => {
-    if (!currentUser || !text.trim()) return;
+    if (!currentUser || !text.trim() || !chatId) return;
     const now = new Date().toISOString();
     const isDeviceOnline = typeof navigator !== 'undefined' ? navigator.onLine : true;
 
@@ -3200,7 +3230,7 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
 
     // Online Handling: Optimistically display and dispatch to Firestore
     const newMsg: ChatMessage = {
-      id: `msg_${Date.now()}`,
+      id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`,
       chatId,
       senderId: currentUser.uid,
       senderName: currentUser.name,
@@ -3216,8 +3246,26 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
       [chatId]: [...(prev[chatId] || []), newMsg]
     }));
 
+    // Diagnostic reporting at message send attempt: reports exact doc ref, currentUser, and auth token
+    logMessageSendingDiagnostics({
+      phase: 'attempt',
+      chatId,
+      messageId: newMsg.id,
+      senderId: currentUser.uid
+    }).catch((diagErr) => {
+      console.warn('[Messaging Diagnostics Notice]', diagErr);
+    });
+
     saveChatMessageToFirestore(chatId, newMsg)
       .then(() => {
+        // Diagnostic report on successful Firestore message write
+        logMessageSendingDiagnostics({
+          phase: 'success',
+          chatId,
+          messageId: newMsg.id,
+          senderId: currentUser.uid
+        }).catch(() => {});
+
         setMessages((prev) => ({
           ...prev,
           [chatId]: (prev[chatId] || []).map((m) =>
@@ -3225,8 +3273,47 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
           )
         }));
       })
-      .catch((err) => {
-        console.warn('Network send failed, enqueuing message offline:', err);
+      .catch((err: any) => {
+        // Diagnostic report on failed Firestore message write
+        logMessageSendingDiagnostics({
+          phase: 'failure',
+          chatId,
+          messageId: newMsg.id,
+          senderId: currentUser.uid,
+          error: err
+        }).catch(() => {});
+
+        const isPermissionDenied =
+          err?.code === 'permission-denied' ||
+          err?.message?.toLowerCase().includes('permission') ||
+          err?.message?.toLowerCase().includes('insufficient permissions');
+        const isMissingDoc =
+          err?.code === 'not-found' ||
+          err?.message?.toLowerCase().includes('not found') ||
+          err?.message?.toLowerCase().includes('missing document');
+
+        if (isPermissionDenied) {
+          console.error('[Messaging Handler ERROR] Message write failed due to Firestore PERMISSION DENIAL:', {
+            chatId,
+            messageId: newMsg.id,
+            senderId: currentUser.uid,
+            errorCode: err?.code,
+            errorMessage: err?.message
+          });
+          showToast('Security check: Firestore permission denied when writing to chat document reference.', 'error');
+        } else if (isMissingDoc) {
+          console.error('[Messaging Handler ERROR] Message write failed due to MISSING DOCUMENT REFERENCE:', {
+            chatId,
+            messageId: newMsg.id,
+            errorCode: err?.code,
+            errorMessage: err?.message
+          });
+          showToast('System notice: Destination chat document reference was not found.', 'error');
+        } else {
+          console.warn('[Messaging Handler] Network send error, queuing message offline:', err?.message || err);
+          showToast('Connection interrupted. Message saved to offline queue.', 'warning');
+        }
+
         const queuedFallback: ChatMessage = {
           ...newMsg,
           status: 'queued',
@@ -3239,52 +3326,92 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
             m.id === newMsg.id ? queuedFallback : m
           )
         }));
-        showToast('Connection interrupted. Message saved to offline queue.', 'warning');
       });
 
-    let updatedChatObj: ChatThread | undefined;
-    setChats((prev) =>
-      prev.map((c) => {
-        if (c.id === chatId) {
-          const nextUnread = { ...c.unreadCount };
-          // Increment unread count for all other members in group or 1-on-1 chat
-          (c.memberIds || []).forEach((mId) => {
-            if (mId !== currentUser.uid) {
-              nextUnread[mId] = (nextUnread[mId] || 0) + 1;
-              const recipient = users.find((u) => u.uid === mId);
-              if (recipient) {
-                sendDirectMessageEmail(currentUser, recipient, text.trim(), chatId);
-              }
-              const msgNotif: AppNotification = {
-                id: `notif_msg_${Date.now()}_${mId}`,
-                toUid: mId,
-                fromUid: currentUser.uid,
-                type: 'message',
-                title: `New message from ${currentUser.name}`,
-                body: text.trim().slice(0, 90),
-                refId: chatId,
-                read: false,
-                createdAt: now
-              };
-              setNotifications((prev) => [msgNotif, ...prev]);
-              saveNotificationToFirestore(msgNotif).catch(() => {});
-            }
-          });
-          updatedChatObj = {
-            ...c,
-            lastMessage: text.trim(),
-            lastMessageAt: now,
-            unreadCount: nextUnread
-          };
-          return updatedChatObj;
+    // Update or ensure chat thread document in Firestore and state
+    const targetChat = chats.find((c) => c.id === chatId);
+    const fallbackOtherUids: string[] = [];
+    if (chatId.startsWith('chat_')) {
+      const parts = chatId.replace(/^chat_/, '').split('_');
+      parts.forEach((p) => {
+        if (p && p !== currentUser.uid && !fallbackOtherUids.includes(p)) {
+          fallbackOtherUids.push(p);
         }
-        return c;
-      })
-    );
-
-    if (updatedChatObj) {
-      saveChatToFirestore(updatedChatObj).catch(() => {});
+      });
     }
+
+    const allMembers = Array.from(
+      new Set([
+        currentUser.uid,
+        ...(targetChat?.memberIds || (targetChat as any)?.participants || []),
+        ...fallbackOtherUids
+      ])
+    );
+    const otherMemberUids = allMembers.filter((mId) => mId !== currentUser.uid);
+
+    const nextUnread: Record<string, number> = { ...(targetChat?.unreadCount || {}) };
+    otherMemberUids.forEach((mId) => {
+      nextUnread[mId] = (nextUnread[mId] || 0) + 1;
+      const recipient = users.find((u) => u.uid === mId);
+      if (recipient) {
+        sendDirectMessageEmail(currentUser, recipient, text.trim(), chatId);
+      }
+      const msgNotif: AppNotification = {
+        id: `notif_msg_${Date.now()}_${mId}`,
+        toUid: mId,
+        fromUid: currentUser.uid,
+        type: 'message',
+        title: `New message from ${currentUser.name}`,
+        body: text.trim().slice(0, 90),
+        refId: chatId,
+        read: false,
+        createdAt: now
+      };
+      setNotifications((prev) => [msgNotif, ...prev]);
+      saveNotificationToFirestore(msgNotif).catch(() => {});
+    });
+    nextUnread[currentUser.uid] = 0;
+
+    const targetUser = otherMemberUids.length > 0 ? users.find((u) => u.uid === otherMemberUids[0]) : undefined;
+
+    const updatedChat: ChatThread = targetChat
+      ? {
+          ...targetChat,
+          memberIds: allMembers,
+          participants: allMembers,
+          lastMessage: text.trim(),
+          lastMessageAt: now,
+          unreadCount: nextUnread
+        }
+      : {
+          id: chatId,
+          memberIds: allMembers,
+          participants: allMembers,
+          lastMessage: text.trim(),
+          lastMessageAt: now,
+          unreadCount: nextUnread,
+          otherUser: targetUser,
+          isGroupChat: false,
+          isEventChat: false
+        };
+    (updatedChat as any).participants = allMembers;
+
+    setChats((prev) => {
+      const idx = prev.findIndex((c) => c.id === chatId);
+      if (idx >= 0) {
+        const copy = [...prev];
+        copy[idx] = updatedChat;
+        return copy;
+      }
+      return [updatedChat, ...prev];
+    });
+
+    // CRITICAL FOR CROSS-USER COMMUNICATION:
+    // Always persist updated chat thread to Firestore so the other user's
+    // subscribeToUserChats listener detects this thread and receives the latest message
+    saveChatToFirestore(updatedChat).catch((err) => {
+      console.warn('Notice updating chat thread in Firestore:', err);
+    });
   };
 
   const syncOfflineMessages = useCallback(async () => {
@@ -3312,13 +3439,15 @@ export const AlumniProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     setChats((prev) =>
       prev.map((c) => {
         if (c.id === chatId) {
-          return {
+          const updated = {
             ...c,
             unreadCount: {
               ...c.unreadCount,
               [currentUser.uid]: 0
             }
           };
+          saveChatToFirestore(updated).catch(() => {});
+          return updated;
         }
         return c;
       })

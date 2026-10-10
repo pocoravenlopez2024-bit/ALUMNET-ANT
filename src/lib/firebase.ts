@@ -739,25 +739,274 @@ export async function getFeedPostsFromFirestore(): Promise<InstitutionalFeedPost
 }
 
 /**
- * Save chat thread & message to Firestore
+ * Save chat thread document to Firestore with sender participant validation
  */
 export async function saveChatToFirestore(chat: ChatThread): Promise<void> {
+  if (!chat || !chat.id || typeof chat.id !== 'string' || !chat.id.trim()) {
+    console.error('[Firestore Messaging] Missing document reference: chat.id is undefined or empty when saving chat thread.');
+    return;
+  }
+
+  const docPath = `${FIRESTORE_COLLECTIONS.CHATS}/${chat.id}`;
+
+  // Ensure participants array is explicitly populated and includes all memberIds
+  const participants = Array.from(new Set([
+    ...(chat.participants || []),
+    ...(chat.memberIds || [])
+  ]));
+
+  const payload: ChatThread = {
+    ...chat,
+    participants,
+    memberIds: Array.from(new Set([...(chat.memberIds || []), ...participants]))
+  };
+
   try {
     const docRef = doc(db, FIRESTORE_COLLECTIONS.CHATS, chat.id);
-    await setDoc(docRef, JSON.parse(JSON.stringify(chat)), { merge: true });
-  } catch (err) {
-    console.warn('Failed to save chat to Firestore:', err);
+    await setDoc(docRef, JSON.parse(JSON.stringify(payload)), { merge: true });
+    console.log(`[Firestore Messaging] Chat thread document persisted to '${docPath}' with participants:`, payload.participants);
+  } catch (err: any) {
+    const isPermissionDenied =
+      err?.code === 'permission-denied' ||
+      err?.message?.toLowerCase().includes('permission');
+    if (isPermissionDenied) {
+      console.error(`[Firestore Messaging ERROR: PERMISSION_DENIED] Write to chat document '${docPath}' was rejected:`, {
+        code: err?.code,
+        message: err?.message,
+        docPath,
+        chatId: chat.id,
+        participants: payload.participants,
+        authUid: auth.currentUser?.uid
+      });
+    } else {
+      console.warn(`[Firestore Messaging Notice] Failed to update chat document '${docPath}':`, err?.message || err);
+    }
   }
 }
 
+/**
+ * Save chat message to subcollection document reference with diagnostic error logging
+ */
 export async function saveChatMessageToFirestore(chatId: string, msg: ChatMessage): Promise<void> {
+  // 1. Verify document reference validity
+  if (!chatId || typeof chatId !== 'string' || !chatId.trim()) {
+    const errorMsg = `[Firestore Messaging ERROR: MISSING_DOC_REFERENCE] Target 'chatId' is null, empty, or undefined. Cannot resolve document reference for message '${msg?.id}'.`;
+    console.error(errorMsg, { chatId, msg });
+    throw new Error(errorMsg);
+  }
+  if (!msg || !msg.id || typeof msg.id !== 'string' || !msg.id.trim()) {
+    const errorMsg = `[Firestore Messaging ERROR: MISSING_DOC_REFERENCE] Message payload is missing 'id'. Cannot resolve subcollection document path in chat '${chatId}'.`;
+    console.error(errorMsg, { chatId, msg });
+    throw new Error(errorMsg);
+  }
+
+  const docPath = `${FIRESTORE_COLLECTIONS.CHATS}/${chatId}/messages/${msg.id}`;
+
   try {
+    // 2. Ensure parent chat document reference exists with participants containing the sender
+    const parentDocRef = doc(db, FIRESTORE_COLLECTIONS.CHATS, chatId);
+    const parentSnap = await getDoc(parentDocRef).catch(() => null);
+    if (!parentSnap || !parentSnap.exists()) {
+      const fallbackParticipants = [msg.senderId];
+      if (chatId.startsWith('chat_')) {
+        const parts = chatId.replace(/^chat_/, '').split('_');
+        parts.forEach((p) => {
+          if (p && !fallbackParticipants.includes(p)) fallbackParticipants.push(p);
+        });
+      }
+      await setDoc(parentDocRef, {
+        id: chatId,
+        memberIds: fallbackParticipants,
+        participants: fallbackParticipants,
+        lastMessage: msg.text,
+        lastMessageAt: msg.createdAt,
+        unreadCount: {}
+      }, { merge: true }).catch((pErr) => {
+        console.warn(`[Firestore Messaging Notice] Parent chat auto-creation notice for '${chatId}':`, pErr?.message || pErr);
+      });
+    }
+
+    console.log(`[Firestore Messaging] Writing message to document reference: ${docPath}`, {
+      chatId,
+      messageId: msg.id,
+      senderId: msg.senderId,
+      senderName: msg.senderName,
+      authUid: auth.currentUser?.uid
+    });
     const msgRef = doc(db, FIRESTORE_COLLECTIONS.CHATS, chatId, 'messages', msg.id);
     await setDoc(msgRef, JSON.parse(JSON.stringify(msg)), { merge: true });
-  } catch (err) {
-    console.warn('Failed to save chat message to Firestore:', err);
+    console.log(`[Firestore Messaging SUCCESS] Message '${msg.id}' written to document reference: ${docPath}`);
+  } catch (err: any) {
+    const isPermissionDenied =
+      err?.code === 'permission-denied' ||
+      err?.message?.toLowerCase().includes('permission') ||
+      err?.message?.toLowerCase().includes('insufficient permissions');
+    const isMissingDoc =
+      err?.code === 'not-found' ||
+      err?.message?.toLowerCase().includes('not found') ||
+      err?.message?.toLowerCase().includes('missing document');
+
+    if (isPermissionDenied) {
+      console.error(`[Firestore Messaging ERROR: PERMISSION_DENIED] Failed to write message to '${docPath}': User lacks write permission to this chat subcollection.`, {
+        code: err?.code,
+        message: err?.message,
+        docPath,
+        chatId,
+        senderId: msg.senderId,
+        authUid: auth.currentUser?.uid
+      });
+    } else if (isMissingDoc) {
+      console.error(`[Firestore Messaging ERROR: MISSING_DOC_REFERENCE] Target collection path or document reference was not found: '${docPath}'.`, {
+        code: err?.code,
+        message: err?.message,
+        docPath,
+        chatId
+      });
+    } else {
+      console.error(`[Firestore Messaging ERROR] Write to '${docPath}' failed:`, {
+        code: err?.code,
+        message: err?.message,
+        docPath
+      });
+    }
     throw err;
   }
+}
+
+/**
+ * Detailed Diagnostic Authentication & Session Status for Messaging
+ */
+export interface MessageAuthDiagnosticReport {
+  hasActiveFirebaseAuth: boolean;
+  firebaseAuthUid: string | null;
+  firebaseAuthEmail: string | null;
+  isAnonymousAuth: boolean;
+  idTokenStatus: 'valid' | 'expired' | 'unretrieved' | 'error';
+  tokenExpirationTime?: string | null;
+  tokenIssuedAtTime?: string | null;
+  tokenClaims?: Record<string, any>;
+  appSessionTokenPresent: boolean;
+  currentAppUserId: string | null;
+  exactChatDocPath: string;
+  exactMessageDocPath: string;
+}
+
+/**
+ * Retrieve current authentication status & token validity
+ */
+export async function getAuthDiagnosticStatus(appUserId?: string, chatId?: string, messageId?: string): Promise<MessageAuthDiagnosticReport> {
+  const currentFbUser = auth.currentUser;
+  let idTokenStatus: 'valid' | 'expired' | 'unretrieved' | 'error' = 'unretrieved';
+  let tokenExpirationTime: string | null = null;
+  let tokenIssuedAtTime: string | null = null;
+  let tokenClaims: Record<string, any> | undefined;
+
+  if (currentFbUser) {
+    try {
+      const idTokenResult = await currentFbUser.getIdTokenResult();
+      tokenExpirationTime = idTokenResult.expirationTime;
+      tokenIssuedAtTime = idTokenResult.issuedAtTime;
+      tokenClaims = idTokenResult.claims;
+      const isExpired = new Date(idTokenResult.expirationTime).getTime() <= Date.now();
+      idTokenStatus = isExpired ? 'expired' : 'valid';
+    } catch {
+      idTokenStatus = 'error';
+    }
+  }
+
+  const appSessionToken = typeof localStorage !== 'undefined'
+    ? localStorage.getItem('alumni_auth_token') || localStorage.getItem('alumni_server_auth_token')
+    : null;
+
+  return {
+    hasActiveFirebaseAuth: !!currentFbUser,
+    firebaseAuthUid: currentFbUser?.uid || null,
+    firebaseAuthEmail: currentFbUser?.email || null,
+    isAnonymousAuth: !!currentFbUser?.isAnonymous,
+    idTokenStatus,
+    tokenExpirationTime,
+    tokenIssuedAtTime,
+    tokenClaims,
+    appSessionTokenPresent: !!appSessionToken,
+    currentAppUserId: appUserId || null,
+    exactChatDocPath: chatId ? `${FIRESTORE_COLLECTIONS.CHATS}/${chatId}` : 'chats/{unresolved_chat_id}',
+    exactMessageDocPath: chatId && messageId ? `${FIRESTORE_COLLECTIONS.CHATS}/${chatId}/messages/${messageId}` : 'chats/{unresolved}/messages/{unresolved}'
+  };
+}
+
+/**
+ * Diagnostic log function invoked on message send attempt, success, or failure
+ * Reports exact chat document reference, current user ID, and auth token status.
+ */
+export async function logMessageSendingDiagnostics(params: {
+  phase: 'attempt' | 'success' | 'failure';
+  chatId: string;
+  messageId: string;
+  senderId: string;
+  error?: any;
+}): Promise<MessageAuthDiagnosticReport> {
+  const report = await getAuthDiagnosticStatus(params.senderId, params.chatId, params.messageId);
+
+  const phaseTag = params.phase.toUpperCase();
+  const headerStyle =
+    params.phase === 'failure'
+      ? 'background: #7F1D1D; color: #FECACA; padding: 2px 6px; border-radius: 4px; font-weight: bold;'
+      : params.phase === 'success'
+      ? 'background: #14532D; color: #BBF7D0; padding: 2px 6px; border-radius: 4px; font-weight: bold;'
+      : 'background: #1E3A8A; color: #BFDBFE; padding: 2px 6px; border-radius: 4px; font-weight: bold;';
+
+  console.groupCollapsed(
+    `%c[MESSAGING DIAGNOSTICS: ${phaseTag}]%c Chat: ${report.exactChatDocPath} | Sender: ${params.senderId}`,
+    headerStyle,
+    'color: inherit; font-weight: normal; margin-left: 6px;'
+  );
+
+  console.log('📄 Exact Firestore Document References:', {
+    chatDocumentReference: report.exactChatDocPath,
+    messageDocumentReference: report.exactMessageDocPath,
+    chatId: params.chatId,
+    messageId: params.messageId
+  });
+
+  console.log('👤 Current User ID & Identity Alignment:', {
+    currentAppUserId: params.senderId,
+    firebaseAuthUid: report.firebaseAuthUid,
+    isUidAligned: params.senderId === report.firebaseAuthUid,
+    firebaseAuthEmail: report.firebaseAuthEmail,
+    isAnonymousAuth: report.isAnonymousAuth
+  });
+
+  console.log('🔐 Auth Token Status & Session Validity:', {
+    idTokenStatus: report.idTokenStatus,
+    tokenExpiresAt: report.tokenExpirationTime,
+    tokenIssuedAt: report.tokenIssuedAtTime,
+    appSessionTokenPresent: report.appSessionTokenPresent,
+    tokenClaims: report.tokenClaims
+  });
+
+  if (params.error) {
+    const isPermissionDenied =
+      params.error?.code === 'permission-denied' ||
+      params.error?.message?.toLowerCase().includes('permission');
+    const isMissingDoc =
+      params.error?.code === 'not-found' ||
+      params.error?.message?.toLowerCase().includes('not found') ||
+      !params.chatId;
+
+    console.error('🚨 Failure Root Cause Analysis:', {
+      identifiedFailureCategory: isPermissionDenied
+        ? 'PERMISSION_DENIAL (Firestore rules rejected request)'
+        : isMissingDoc
+        ? 'MISSING_DOCUMENT_REFERENCE (Invalid document path or parent missing)'
+        : 'NETWORK_OR_CLIENT_ERROR',
+      errorCode: params.error?.code,
+      errorMessage: params.error?.message,
+      errorDetails: params.error
+    });
+  }
+
+  console.groupEnd();
+  return report;
 }
 
 /**

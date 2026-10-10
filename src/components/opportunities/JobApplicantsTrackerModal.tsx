@@ -15,7 +15,8 @@ import {
   Filter,
   Phone,
   Mail,
-  GraduationCap
+  GraduationCap,
+  MessageSquare
 } from 'lucide-react';
 import { Opportunity, JobApplication, ApplicationStatus } from '../../types';
 import { useAlumni } from '../../context/AlumniContext';
@@ -40,7 +41,7 @@ export const JobApplicantsTrackerModal: React.FC<JobApplicantsTrackerModalProps>
   isOpen,
   onClose
 }) => {
-  const { jobApplications, updateApplicationStatus, setSelectedUserIdForModal } = useAlumni();
+  const { jobApplications, updateApplicationStatus, setSelectedUserIdForModal, getOrCreateChat, setActiveTab } = useAlumni();
 
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -227,14 +228,28 @@ export const JobApplicantsTrackerModal: React.FC<JobApplicantsTrackerModalProps>
                 {/* Candidate Banner */}
                 <div className="flex items-start justify-between pb-3 border-b border-stone-100">
                   <div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <h3 className="text-base font-bold text-stone-900">{selectedApp.applicantName}</h3>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (selectedApp.applicantUid) {
+                            getOrCreateChat(selectedApp.applicantUid);
+                            onClose();
+                            setActiveTab('messages');
+                          }
+                        }}
+                        className="px-2.5 py-1 bg-[#8B181B] hover:bg-[#721316] text-white rounded-lg text-xs font-semibold flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                      >
+                        <MessageSquare className="w-3 h-3" />
+                        <span>Message Candidate</span>
+                      </button>
                       <button
                         type="button"
                         onClick={() => setSelectedUserIdForModal(selectedApp.applicantUid)}
                         className="text-[11px] text-blue-600 hover:underline font-semibold flex items-center gap-1"
                       >
-                        <span>View Alumni Profile</span>
+                        <span>View Profile</span>
                         <ExternalLink className="w-3 h-3" />
                       </button>
                     </div>

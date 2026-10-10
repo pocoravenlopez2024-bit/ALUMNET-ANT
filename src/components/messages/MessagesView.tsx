@@ -110,12 +110,34 @@ export const MessagesView: React.FC = () => {
         c.id === activeChatId &&
         (c.memberIds || (c as any).participants || []).includes(currentUser.uid)
     );
-    return found || null;
-  }, [chats, activeChatId, currentUser?.uid]);
+    if (found) return found;
+
+    // Fallback: If activeChatId represents a deterministic 1-on-1 thread (e.g. chat_uid1_uid2)
+    if (activeChatId.startsWith('chat_')) {
+      const parts = activeChatId.replace(/^chat_/, '').split('_');
+      if (parts.length === 2 && parts.includes(currentUser.uid)) {
+        const otherId = parts.find((p) => p !== currentUser.uid) || '';
+        const targetUser = users.find((u) => u.uid === otherId);
+        return {
+          id: activeChatId,
+          memberIds: parts,
+          participants: parts,
+          lastMessage: '',
+          lastMessageAt: new Date().toISOString(),
+          unreadCount: { [currentUser.uid]: 0 },
+          otherUser: targetUser,
+          isGroupChat: false,
+          isEventChat: false
+        } as ChatThread;
+      }
+    }
+    return null;
+  }, [chats, activeChatId, currentUser?.uid, users]);
 
   // Recipient user in 1-on-1 direct chat
   const recipientUser = useMemo(() => {
     if (!activeChat || !currentUser || activeChat.isGroupChat || activeChat.isEventChat) return null;
+    if (activeChat.otherUser) return activeChat.otherUser;
     const otherId = (activeChat.memberIds || (activeChat as any).participants || []).find(
       (id) => id !== currentUser.uid
     );
@@ -164,8 +186,16 @@ export const MessagesView: React.FC = () => {
 
   const handleSend = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputMessage.trim() || !activeChat) return;
-    sendMessage(activeChat.id, inputMessage.trim());
+    const targetChatId = activeChat?.id || activeChatId;
+    if (!inputMessage.trim() || !targetChatId) {
+      console.warn('[MessagesView] Send aborted: targetChatId or input text is missing.', {
+        activeChatId,
+        hasActiveChatObj: !!activeChat,
+        hasText: !!inputMessage.trim()
+      });
+      return;
+    }
+    sendMessage(targetChatId, inputMessage.trim());
     setInputMessage('');
   };
 
@@ -1359,9 +1389,10 @@ export const MessagesView: React.FC = () => {
                     </div>
                     <button
                       type="button"
-                      className="px-2.5 py-1 bg-[#8B181B] text-white rounded-lg text-[10px] font-semibold shrink-0 cursor-pointer"
+                      className="px-2.5 py-1 bg-[#8B181B] text-white rounded-lg text-[10px] font-semibold shrink-0 cursor-pointer flex items-center gap-1"
                     >
-                      Connect
+                      <MessageSquare className="w-3 h-3" />
+                      <span>Message</span>
                     </button>
                   </div>
                 ))}

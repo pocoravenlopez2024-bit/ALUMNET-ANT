@@ -705,23 +705,22 @@ export const NetworkView: React.FC = () => {
                   >
                     View Dossier
                   </button>
-                  {isConnected(spotlightAlumnus.uid) ? (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        getOrCreateChat(spotlightAlumnus.uid);
-                        setActiveTab('messages');
-                      }}
-                      className="px-4 py-1.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Message</span>
-                    </button>
-                  ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      getOrCreateChat(spotlightAlumnus.uid);
+                      setActiveTab('messages');
+                    }}
+                    className="px-3.5 py-1.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Message</span>
+                  </button>
+                  {!isConnected(spotlightAlumnus.uid) && (
                     <button
                       type="button"
                       onClick={() => sendFriendRequest(spotlightAlumnus.uid)}
-                      className="px-4 py-1.5 bg-[#8B181B] hover:bg-[#721316] text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-2xs transition-all cursor-pointer active:scale-95"
+                      className="px-3.5 py-1.5 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 text-stone-800 dark:text-stone-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-all cursor-pointer active:scale-95"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
                       <span>Connect</span>
@@ -868,18 +867,24 @@ export const NetworkView: React.FC = () => {
                                 Dossier
                               </button>
 
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  getOrCreateChat(user.uid);
+                                  setActiveTab('messages');
+                                }}
+                                className="px-2.5 py-1 text-[11px] font-bold text-white bg-[#8B181B] hover:bg-[#721316] rounded-lg flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
+                                title="Dispatch peer message"
+                              >
+                                <MessageSquare className="w-3 h-3" />
+                                <span>Message</span>
+                              </button>
+
                               {connected ? (
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    getOrCreateChat(user.uid);
-                                    setActiveTab('messages');
-                                  }}
-                                  className="px-3 py-1 text-[11px] font-bold text-white bg-emerald-700 hover:bg-emerald-800 rounded-lg flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
-                                >
-                                  <MessageSquare className="w-3 h-3" />
-                                  <span>Chat</span>
-                                </button>
+                                <span className="px-2 py-1 text-[10px] font-semibold text-emerald-800 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 rounded-lg flex items-center gap-1">
+                                  <Check className="w-3 h-3" />
+                                  <span>Connected</span>
+                                </span>
                               ) : reqState === 'sent' ? (
                                 <button
                                   type="button"
@@ -892,7 +897,7 @@ export const NetworkView: React.FC = () => {
                                       showToast(`Connection request to ${user.name} cancelled`, 'info');
                                     }
                                   }}
-                                  className="px-2.5 py-1 text-[11px] font-semibold text-amber-800 bg-amber-50 hover:bg-red-50 hover:text-red-700 border border-amber-200 rounded-lg transition-colors cursor-pointer"
+                                  className="px-2 py-1 text-[10px] font-semibold text-amber-800 bg-amber-50 hover:bg-red-50 hover:text-red-700 border border-amber-200 rounded-lg transition-colors cursor-pointer"
                                   title="Click again to undo request"
                                 >
                                   Pending (Undo)
@@ -906,7 +911,7 @@ export const NetworkView: React.FC = () => {
                                     );
                                     if (req) acceptFriendRequest(req.id);
                                   }}
-                                  className="px-3 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs cursor-pointer"
+                                  className="px-2.5 py-1 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-lg shadow-2xs cursor-pointer"
                                 >
                                   Accept
                                 </button>
@@ -914,7 +919,7 @@ export const NetworkView: React.FC = () => {
                                 <button
                                   type="button"
                                   onClick={() => sendFriendRequest(user.uid)}
-                                  className="px-3 py-1 text-[11px] font-bold text-white bg-[#8B181B] hover:bg-[#721316] rounded-lg shadow-2xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
+                                  className="px-2.5 py-1 text-[11px] font-semibold text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 dark:hover:bg-stone-700 rounded-lg shadow-2xs flex items-center gap-1 transition-all cursor-pointer active:scale-95"
                                 >
                                   <UserPlus className="w-3 h-3" />
                                   <span>Connect</span>
@@ -1029,18 +1034,22 @@ export const NetworkView: React.FC = () => {
                         Dossier
                       </button>
 
+                      <button
+                        type="button"
+                        onClick={() => {
+                          getOrCreateChat(user.uid);
+                          setActiveTab('messages');
+                        }}
+                        className="flex-1 py-1.5 text-xs font-semibold text-white bg-[#8B181B] hover:bg-[#721316] rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-2xs"
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>Message</span>
+                      </button>
+
                       {connected ? (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            getOrCreateChat(user.uid);
-                            setActiveTab('messages');
-                          }}
-                          className="flex-1 py-1.5 text-xs font-semibold text-white bg-emerald-700 hover:bg-emerald-800 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-2xs"
-                        >
-                          <MessageSquare className="w-3.5 h-3.5" />
-                          <span>Chat</span>
-                        </button>
+                        <span className="p-1.5 text-emerald-700 bg-emerald-50 dark:bg-emerald-950/40 rounded-xl" title="Connected">
+                          <Check className="w-3.5 h-3.5" />
+                        </span>
                       ) : reqState === 'sent' ? (
                         <button
                           type="button"
@@ -1053,14 +1062,13 @@ export const NetworkView: React.FC = () => {
                               showToast(`Connection request to ${user.name} cancelled`, 'info');
                             }
                           }}
-                          className="flex-1 py-1.5 text-xs font-semibold text-amber-900 bg-amber-50 hover:bg-red-50 hover:text-red-700 border border-amber-200/80 hover:border-red-200 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer"
-                          title="Click again to undo connection request"
+                          className="px-2 py-1.5 text-[11px] font-semibold text-amber-900 bg-amber-50 hover:bg-red-50 hover:text-red-700 border border-amber-200/80 rounded-xl transition-colors cursor-pointer"
+                          title="Click to cancel request"
                         >
-                          <Clock className="w-3.5 h-3.5 text-amber-600" />
-                          <span>Sent (Undo)</span>
+                          <Clock className="w-3 h-3 text-amber-600" />
                         </button>
                       ) : reqState === 'received' ? (
-                        <div className="flex-1 flex items-center gap-1">
+                        <div className="flex items-center gap-1">
                           <button
                             type="button"
                             onClick={() => {
@@ -1069,11 +1077,10 @@ export const NetworkView: React.FC = () => {
                               );
                               if (req) acceptFriendRequest(req.id);
                             }}
-                            className="flex-1 py-1.5 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl flex items-center justify-center gap-1 transition-colors cursor-pointer shadow-2xs"
-                            title="Accept connection request"
+                            className="p-1.5 text-[11px] font-bold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl cursor-pointer shadow-2xs"
+                            title="Accept connection"
                           >
                             <Check className="w-3 h-3" />
-                            <span>Accept</span>
                           </button>
                           <button
                             type="button"
@@ -1093,10 +1100,10 @@ export const NetworkView: React.FC = () => {
                         <button
                           type="button"
                           onClick={() => sendFriendRequest(user.uid)}
-                          className="flex-1 py-1.5 text-xs font-semibold text-white bg-[#8B181B] hover:bg-[#721316] rounded-xl flex items-center justify-center gap-1 transition-all shadow-2xs hover:shadow-xs cursor-pointer active:scale-95"
+                          className="p-1.5 text-stone-700 dark:text-stone-300 bg-stone-100 dark:bg-stone-800 hover:bg-stone-200 rounded-xl transition-all cursor-pointer active:scale-95"
+                          title="Connect with classmate"
                         >
                           <UserPlus className="w-3.5 h-3.5" />
-                          <span>Connect</span>
                         </button>
                       )}
                     </div>
